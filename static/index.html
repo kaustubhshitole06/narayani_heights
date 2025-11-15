@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Items Processor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
+        }
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8e9ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+        .upload-text {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 18px;
+        }
+        .upload-hint {
+            color: #999;
+            font-size: 14px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f1ff;
+            border-radius: 10px;
+            display: none;
+        }
+        .file-info.show {
+            display: block;
+        }
+        .file-name {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .process-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102,126,234,0.4);
+        }
+        .process-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .loading.show {
+            display: block;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+        .message.show {
+            display: block;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> Food Items Processor</h1>
+        <p class="subtitle">Narayani Heights Hotel & Resort</p>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">Click or Drag to Upload</div>
+            <div class="upload-hint">Upload DOCX or PDF file with food items</div>
+        </div>
+
+        <input type="file" id="fileInput" accept=".docx,.pdf">
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-name" id="fileName"></div>
+            <button class="process-btn" id="processBtn">Process & Download</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Processing your file...</div>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const processBtn = document.getElementById('processBtn');
+        const loading = document.getElementById('loading');
+        const message = document.getElementById('message');
+        
+        let selectedFile = null;
+        
+        uploadArea.onclick = () => fileInput.click();
+        
+        uploadArea.ondragover = (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        };
+        
+        uploadArea.ondragleave = () => {
+            uploadArea.classList.remove('dragover');
+        };
+        
+        uploadArea.ondrop = (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        };
+        
+        fileInput.onchange = (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        };
+        
+        function handleFile(file) {
+            if (!file.name.endsWith('.docx') && !file.name.endsWith('.pdf')) {
+                showMsg('Please upload .docx or .pdf file only', 'error');
+                return;
+            }
+            selectedFile = file;
+            fileName.textContent = '📄 ' + file.name;
+            fileInfo.classList.add('show');
+            message.classList.remove('show');
+        }
+        
+        processBtn.onclick = async () => {
+            if (!selectedFile) return;
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            processBtn.disabled = true;
+            loading.classList.add('show');
+            message.classList.remove('show');
+            
+            try {
+                const res = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Failed');
+                }
+                
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const baseName = selectedFile.name.split('.')[0];
+                a.download = 'formatted_' + baseName + '.docx';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showMsg('✓ File processed successfully!', 'success');
+                setTimeout(() => {
+                    fileInfo.classList.remove('show');
+                    selectedFile = null;
+                    fileInput.value = '';
+                }, 2000);
+            } catch (err) {
+                showMsg('✗ Error: ' + err.message, 'error');
+            } finally {
+                loading.classList.remove('show');
+                processBtn.disabled = false;
+            }
+        };
+        
+        function showMsg(txt, type) {
+            message.textContent = txt;
+            message.className = 'message show ' + type;
+        }
+    </script>
+</body>
+</html>
