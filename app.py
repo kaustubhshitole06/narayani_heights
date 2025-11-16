@@ -77,7 +77,7 @@ def apply_golden_border(table):
     for side in ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']:
         border = OxmlElement(f'w:{side}')
         border.set(qn('w:val'), 'single')
-        border.set(qn('w:sz'), '24')
+        border.set(qn('w:sz'), '95')
         border.set(qn('w:space'), '0')
         border.set(qn('w:color'), 'D4AF37')
         tblBorders.append(border)
@@ -141,14 +141,21 @@ def add_food_item_template(doc, item_name, item_number):
     tcPr.append(tcBorders)
     
     right.text = ''
-    p = right.paragraphs[0]
-    r = p.add_run(item_name)
-    r.bold = True
-    r.font.size = Pt(36)
-    r.font.name = 'Arial'
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.space_before = Pt(80)
-    p.space_after = Pt(80)
+    
+    item_words = item_name.upper().split()
+    
+    for word in item_words:
+        p = right.add_paragraph() if item_words.index(word) > 0 else right.paragraphs[0]
+        r = p.add_run(word)
+        r.bold = True
+        r.font.size = Pt(48)
+        r.font.name = 'Playfair Display'
+        r.font.color.rgb = RGBColor(0, 0, 0)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.space_after = Pt(0)
+    
+    right.paragraphs[0].space_before = Pt(60)
+    right.paragraphs[-1].space_after = Pt(60)
     
     apply_golden_border(table)
     doc.add_paragraph()
@@ -157,28 +164,19 @@ def create_formatted_docx(items, output_file):
     doc = Document()
     
     for section in doc.sections:
-        section.top_margin = Inches(0.75)
-        section.bottom_margin = Inches(0.75)
-        section.left_margin = Inches(1)
-        section.right_margin = Inches(1)
-    
-    title = doc.add_heading('Food Items Catalog', level=1)
-    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
-    sub = doc.add_paragraph('Complete Item Information')
-    sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    sub.runs[0].font.size = Pt(14)
-    sub.runs[0].italic = True
-    
-    doc.add_paragraph('\n' * 3)
-    doc.add_page_break()
+        section.top_margin = Inches(0.5)
+        section.bottom_margin = Inches(0.5)
+        section.left_margin = Inches(0.75)
+        section.right_margin = Inches(0.75)
     
     for i, item in enumerate(items, 1):
         add_food_item_template(doc, item, i)
         if i % 2 == 0 and i < len(items):
             doc.add_page_break()
         elif i % 2 == 1 and i < len(items):
-            doc.add_paragraph('\n' + '═' * 70 + '\n')
+            sep_para = doc.add_paragraph()
+            sep_para.add_run('\n')
+            doc.add_paragraph()
     
     doc.save(output_file)
 

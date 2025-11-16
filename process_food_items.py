@@ -94,14 +94,20 @@ def add_food_item_template(doc, item_name, item_number):
     
     right_cell.text = ''
     
-    name_para = right_cell.paragraphs[0]
-    name_run = name_para.add_run(item_name)
-    name_run.bold = True
-    name_run.font.size = Pt(36)
-    name_run.font.name = 'Arial'
-    name_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    name_para.space_before = Pt(80)
-    name_para.space_after = Pt(80)
+    item_words = item_name.upper().split()
+    
+    for word in item_words:
+        p = right_cell.add_paragraph() if item_words.index(word) > 0 else right_cell.paragraphs[0]
+        r = p.add_run(word)
+        r.bold = True
+        r.font.size = Pt(48)
+        r.font.name = 'Playfair Display'
+        r.font.color.rgb = RGBColor(0, 0, 0)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.space_after = Pt(0)
+    
+    right_cell.paragraphs[0].space_before = Pt(60)
+    right_cell.paragraphs[-1].space_after = Pt(60)
     
     apply_golden_border(main_table)
     
@@ -112,22 +118,10 @@ def create_formatted_docx(items, output_file):
     
     sections = doc.sections
     for section in sections:
-        section.top_margin = Inches(0.75)
-        section.bottom_margin = Inches(0.75)
-        section.left_margin = Inches(1)
-        section.right_margin = Inches(1)
-    
-    title = doc.add_heading('Food Items Catalog', level=1)
-    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
-    subtitle = doc.add_paragraph('Complete Item Information')
-    subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    subtitle_run = subtitle.runs[0]
-    subtitle_run.font.size = Pt(14)
-    subtitle_run.italic = True
-    
-    doc.add_paragraph('\n' * 3)
-    doc.add_page_break()
+        section.top_margin = Inches(0.5)
+        section.bottom_margin = Inches(0.5)
+        section.left_margin = Inches(0.75)
+        section.right_margin = Inches(0.75)
     
     for i, item in enumerate(items, start=1):
         add_food_item_template(doc, item, i)
@@ -135,7 +129,9 @@ def create_formatted_docx(items, output_file):
         if i % 2 == 0 and i < len(items):
             doc.add_page_break()
         elif i % 2 == 1 and i < len(items):
-            doc.add_paragraph('\n' + '═' * 70 + '\n')
+            sep_para = doc.add_paragraph()
+            sep_para.add_run('\n')
+            doc.add_paragraph()
     
     doc.save(output_file)
     print(f"✓ Document created successfully: {output_file}")
